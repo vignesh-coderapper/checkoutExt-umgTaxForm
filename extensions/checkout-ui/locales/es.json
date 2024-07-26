@@ -1,0 +1,15 @@
+{
+  "attributeChangesAreNotSupported": "Attribute changes are not supported in this checkout",
+  "clickHereIfYouRequireAnInvoice": "Da clic aquí si requieres factura.",
+  "taxInformationForYourInvoice": "Datos Fiscales para su factura",
+  "pleaseVerifyBodyCopy": "Verifique que los datos proporcionados coincidan con su Constancia de Situación Fiscal para que pueda generarse su factura.",
+  "nameOrSocialReason": "Nombre o Razon social",
+  "naturalPerson": "Soy persona fisica",
+  "legalEntity": "Soy persona moral",
+  "kindOfPerson": "Tipo de persona",
+  "rfc": "RFC",
+  "postalCode": "Código Postal",
+  "taxRegime": "Régimen Fiscal",
+  "useCfdi": "Uso CFDI"
+}
+

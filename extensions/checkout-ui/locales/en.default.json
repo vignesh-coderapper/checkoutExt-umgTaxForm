@@ -1,0 +1,14 @@
+{
+  "attributeChangesAreNotSupported": "Attribute changes are not supported in this checkout",
+  "clickHereIfYouRequireAnInvoice": "Click here if you require an invoice.",
+  "taxInformationForYourInvoice": "Tax information for your invoice",
+  "pleaseVerifyBodyCopy": "Please verify that the data provided matches your Tax Status Certificate so that your invoice can be generated.",
+  "nameOrSocialReason": "Name or Social reason",
+  "naturalPerson": "Im a natural person",
+  "legalEntity": "Im a legal entity",
+  "kindOfPerson": "Kind of person",
+  "rfc": "RFC",
+  "postalCode": "Postal Code",
+  "taxRegime": "Tax Regime",
+  "useCfdi": "Use CFDI"
+}

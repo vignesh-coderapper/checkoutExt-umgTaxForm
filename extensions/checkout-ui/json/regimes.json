@@ -1,0 +1,29 @@
+{
+  "regimes": [
+    { "person": "natural_person", "regime": "605 - Sueldos y Salarios e Ingresos Asimilados a Salarios" },
+    { "person": "natural_person", "regime": "606 - Arrendamiento" },
+    { "person": "natural_person", "regime": "607 - Régimen de Enajenación o Adquisición de Bienes" },
+    { "person": "natural_person", "regime": "608 - Demás ingreso" },
+    { "person": "natural_person", "regime": "610 - Residentes en el Extranjero sin Establecimiento Permanente en México" },
+    { "person": "natural_person", "regime": "611 - Ingresos por Dividendos (socios y accionistas)" },
+    { "person": "natural_person", "regime": "612 - Personas Físicas con Actividades Empresariales y Profesionales" },
+    { "person": "natural_person", "regime": "614 - Ingresos por intereses" },
+    { "person": "natural_person", "regime": "615 - Régimen de los ingresos por obtención de premios" },
+    { "person": "natural_person", "regime": "616 - Sin obligaciones fiscales" },
+    { "person": "natural_person", "regime": "621 - Incorporación Fiscal" },
+    { "person": "natural_person", "regime": "625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas" },
+    { "person": "natural_person", "regime": "626 - Régimen Simplificado de Confianza" },
+    { "person": "legal_entity", "regime": "601 - General de Ley Personas Morales" },
+    { "person": "legal_entity", "regime": "603 - Personas Morales con Fines no Lucrativos" },
+    { "person": "legal_entity", "regime": "610 - Residentes en el Extranjero sin Establecimiento Permanente en México" },
+    { "person": "legal_entity", "regime": "620 - Sociedades Cooperativas de Producción que optan por diferir sus ingresos" }
+  ],
+  "cfdis": [
+    { "person": "natural_person", "cfdi": "G01 - Adquisicion de Mercancias" },
+    { "person": "natural_person", "cfdi": "G02 - Devoluciones, Descuentos, o Bonificaciones" },
+    { "person": "natural_person", "cfdi": "S01 - Sin Efectos Fiscales" },
+    { "person": "legal_entity", "cfdi": "G01 - Adquisicion de Mercancias" },
+    { "person": "legal_entity", "cfdi": "G02 - Devoluciones, Descuentos, o Bonificaciones" },
+    { "person": "legal_entity", "cfdi": "S01 - Sin Efectos Fiscales" }
+  ]
+}
