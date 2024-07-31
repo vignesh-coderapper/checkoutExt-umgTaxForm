@@ -9,126 +9,28 @@ import {
   useInstructions,
   useTranslate,
   useApplyCartLinesChange,
+  useBuyerJourneyIntercept,
+  useExtensionCapability,
 } from "@shopify/ui-extensions-react/checkout";
 import { BlockSpacer, Button, Form, Grid, GridItem, Heading, Select, TextField, View } from "@shopify/ui-extensions/checkout";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import taxFormJson from '../json/regimes.json';
 import postalData from '../json/postalCode.json';
 
 // 1. Choose an extension target
-export default reactExtension("purchase.checkout.actions.render-before", () => (
+export default reactExtension("purchase.checkout.delivery-address.render-after", () => (
   <Extension />
 ));
 
 function Extension() {
-
-  // const taxFormJson = {
-  //   "regimes": [
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "605 - Sueldos y Salarios e Ingresos Asimilados a Salarios"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "606 - Arrendamiento"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "607 - Régimen de Enajenación o Adquisición de Bienes"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "608 - Demás ingreso"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "610 - Residentes en el Extranjero sin Establecimiento Permanente en México"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "611 - Ingresos por Dividendos (socios y accionistas)"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "612 - Personas Físicas con Actividades Empresariales y Profesionales"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "614 - Ingresos por intereses"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "615 - Régimen de los ingresos por obtención de premios"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "616 - Sin obligaciones fiscales"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "621 - Incorporación Fiscal"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "regime": "626 - Régimen Simplificado de Confianza"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "regime": "601 - General de Ley Personas Morales"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "regime": "603 - Personas Morales con Fines no Lucrativos"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "regime": "610 - Residentes en el Extranjero sin Establecimiento Permanente en México"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "regime": "620 - Sociedades Cooperativas de Producción que optan por diferir sus ingresos"
-  //     }
-  //   ],
-  //   "cfdis": [
-  //     {
-  //       "person":"natural_person",
-  //       "cfdi": "G01 - Adquisicion de Mercancias"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "cfdi": "G02 - Devoluciones, Descuentos, o Bonificaciones"
-  //     },
-  //     {
-  //       "person":"natural_person",
-  //       "cfdi": "S01 - Sin Efectos Fiscales"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "cfdi": "G01 - Adquisicion de Mercancias"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "cfdi": "G02 - Devoluciones, Descuentos, o Bonificaciones"
-  //     },
-  //     {
-  //       "person":"legal_entity",
-  //       "cfdi": "S01 - Sin Efectos Fiscales"
-  //     }
-  //   ]
-  // }
-
-  
   const translate = useTranslate();
   const [checked, setChecked] = useState(false);
+  const [isSubmitted, setSubmitted] = useState(false);
   const [regimeOptions, setRegimeOptions] = useState([])
   const [cfdiOptions, setCfdiOptions] = useState([])
   // const [selectedOption, setSelectedOption] = useState([])
   const { extension } = useApi();
-  const formValueObj = {
+  const initialFormState = {
     name: '',
     type: '',
     rfc: '',
@@ -136,8 +38,10 @@ function Extension() {
     taxRegime: '',
     useCfdi: ''
   }
-  const [formValues, setFormValues] = useState(formValueObj);
-  const [validation, setValidation] = useState(formValueObj);
+
+
+  const [formValues, setFormValues] = useState(initialFormState);
+  const [validation, setValidation] = useState(initialFormState);
 
   const instructions = useInstructions();
   const applyAttributeChange = useApplyAttributeChange();
@@ -200,125 +104,211 @@ function Extension() {
     }
   };
 
-  const handleChange = (field, value) => {
-    if (field === 'name') {
-      const isValid = value.length > 4 && /^[a-zA-ZÀ-ÿ' -]+$/.test(value)
-      console.log('formValues.taxRegime && formValues.useCfdi', isValid)
-      setFormValues((prev) => ({ ...prev, [field]: value }));
-      setValidation((prev) => {
-        if(formValues.taxRegime.length === 0 && formValues.useCfdi.length === 0) {
-          return { ...prev,[field]: !isValid ? 'Name is Not Valid' : '', taxRegime:'Regimee Not Valid', useCfdi: 'Cfdi is not valid'} 
-        } 
-        return { ...prev, [field]: !isValid ? 'Name is Not Valid' : '' }
-      });
-    } else if (field === 'type') {
-      const regimeArr = [];
-      const cfdiArr = [];
+  const validataName = (field, value) => {
+    const isValid = value.length > 4 && /^[a-zA-ZÀ-ÿ' -]+$/.test(value)
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+    setValidation((prev) => {
+      if(formValues.taxRegime.length === 0 && formValues.useCfdi.length === 0 && formValues.type.length === 0) {
+        return { ...prev,[field]: !isValid ? 'Name is Not Valid' : '', type:'Select the Entity', taxRegime:'Regimee Not Valid', useCfdi: 'Cfdi is not valid'} 
+      } 
+      return { ...prev, [field]: !isValid ? 'Name is Not Valid' : '' }
+    });
+  }
 
-      taxFormJson.regimes.forEach((item) => {
-        if (item.person === value) {
-          regimeArr.push({
-            value: item.regime,
-            label: item.regime,
-          });
-        }
-      });
-
-      taxFormJson.cfdis.forEach((item) => {
-        if (item.person === value) {
-          cfdiArr.push({
-            value: item.cfdi,
-            label: item.cfdi,
-          });
-        }
-      });
-
-      setRegimeOptions(regimeArr)
-      setCfdiOptions(cfdiArr)
-      setFormValues((prev) => ({
+  const validateEntity = (field, value) => {
+    const regimeArr = [];
+    taxFormJson.regimes.forEach((item) => {
+      if (item.person === value) {
+        regimeArr.push({
+          value: item.regime,
+          label: item.regime,
+        });
+      }
+    });
+    setRegimeOptions(regimeArr)
+    // setFormValues((prev) => ({
+    //   ...prev,
+    //   [field]: value,
+    //   rfc: ''
+    // }));
+    setFormValues((prev) => {
+      const newFormValues = {
         ...prev,
         [field]: value,
-      }));
-      setValidation((prev) => ({ ...prev, [field]: !value.length ? 'Type is required' : '' }));
+        rfc: '', // Ensure rfc is set to an empty string
+      };
+  
+      // Validate RFC with the updated form values
+      validateRFC('rfc', newFormValues.rfc, value);
+      return newFormValues;
+    });
+    setValidation((prev) => ({ ...prev, [field]: !value.length ? 'Type is required' : '' }));
+  }
 
-      validateRFC('rfc', formValues.rfc, value)
+  const validatePostal = (field, value) => {
+    const isPostalValid = postalData.postal_codes.find(i => i === value )
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+    if (value && isPostalValid) {
+      setValidation((prev) => ({ ...prev, [field]: '' }));
+    } else {
+      setValidation((prev) => ({ ...prev, [field]: 'Postal is not Valid' }));
+    }
+  }
+
+  const validateSelectDropdown = (field, value, Errormessage) => {
+    setFormValues((prev) => ({ ...prev, [field]: value }));
+    setValidation((prev) => ({ ...prev, [field]: !value.length ? Errormessage : ''  }));
+  }
+
+  
+
+  const handleChange = (field, value) => {
+    if (field === 'name') {
+      validataName(field, value)
+    } else if (field === 'type') {
+      validateEntity(field, value)
     } else if (field === 'postalCode') {
-      const isPostalValid = postalData.postal_codes.find(i => i === value )
-      if (isPostalValid) {
-        setFormValues((prev) => ({ ...prev, [field]: value }));
-        setValidation((prev) => ({ ...prev, [field]: '' }));
-      } else {
-        setValidation((prev) => ({ ...prev, [field]: 'Postal is not Valid' }));
-      }
+      validatePostal(field, value)
     } else if (field === 'rfc') {
       validateRFC(field, value, formValues.type)
     } else if (field === 'taxRegime') {
-      setFormValues((prev) => ({ ...prev, [field]: value }));
-      setValidation((prev) => ({ ...prev, [field]: !value.length ? 'Regime not valid' : ''  }));
+      validateSelectDropdown(field, value, 'Regime not valid');
     } else if (field === 'useCfdi') {
-      setFormValues((prev) => ({ ...prev, [field]: value }));
-      setValidation((prev) => ({ ...prev, [field]: !value.length ? 'Regime not valid' : ''  }));
-    }
-     else {
-      setFormValues((prev) => ({ ...prev, [field]: value }));
+      validateSelectDropdown(field, value, 'CFDI not valid');
     }
   };
 
 
-  const handleSubmit = async () => {
-    console.log('handle submit')
-  
-    // const attributes = [
-    //   { key: 'Name', value: formValues.name },
-    //   { key: 'EntityType', value: formValues.type },
-    //   { key: 'RFC', value: formValues.rfc },
-    //   { key: 'PostalCode', value: formValues.postalCode },
-    //   { key: 'TaxRegime', value: formValues.taxRegime },
-    //   { key: 'UseCFDI', value: formValues.useCfdi },
-    // ];
+  // const handleSubmit = async () => {
+  //   try {
+  //     const result = await applyAttributeChange({
+  //       key: "invoiceTaxForm",
+  //       type: "updateAttribute",
+  //       value: JSON.stringify(formValues),
+  //     });
+  //     // setChecked(false)
+  //     // if(result) {
+  //     //   setSuccess(true)
+  //     // }
+  //     console.log('Cart attributes updated successfully', result);
+  //   } catch (error) {
+  //     console.error('Error updating cart attributes:', error);
+  //   }
+  // };
 
-    
+
+  const handleSubmit = async () => {
     try {
       const result = await applyAttributeChange({
         key: "invoiceTaxForm",
         type: "updateAttribute",
         value: JSON.stringify(formValues),
       });
-      console.log('Cart attributes updated successfully', result);
+
+      console.log("Cart attributes updated successfully", result);
+      if(result) {
+        setSubmitted(true)
+      }
     } catch (error) {
-      console.error('Error updating cart attributes:', error);
+      console.error("Error updating cart attributes:", error);
     }
   };
 
   const checkboxHandler = () => {
-    console.log('checkboxhandler')
-    setChecked(!checked)
-    const newValidation = {...validation}
-
-    if (!formValues.name) newValidation.name = "Name is required";
-    if (!formValues.type) newValidation.type = "Type is required";
-    if (!formValues.rfc) newValidation.rfc = "RFC is required";
-    if (!formValues.postalCode) newValidation.postalCode = "Postal Code is required";
-    if (!formValues.taxRegime) newValidation.taxRegime = "Tax Regime is required";
-    if (!formValues.useCfdi) newValidation.useCfdi = "CFDI is required";
-
-    setValidation(newValidation);
+    setChecked((prevChecked) => {
+      const newChecked = !prevChecked;
+      if (!newChecked) {
+        setFormValues(initialFormState); // Reset form values if checkbox is unchecked
+        setValidation(initialFormState); // Reset validation
+      }
+      return newChecked;
+    });
   }
 
+  // const validateFormValueEmpty = () => {
+  //   const newValidation = { ...validation };
+  //   if (!formValues.name) newValidation.name = "Name is required";
+  //   if (!formValues.type) newValidation.type = "Type is required";
+  //   if (!formValues.rfc) newValidation.rfc = "RFC is required";
+  //   if (!formValues.postalCode) newValidation.postalCode = "Postal Code is required";
+  //   if (!formValues.taxRegime) newValidation.taxRegime = "Tax Regime is required";
+  //   if (!formValues.useCfdi) newValidation.useCfdi = "CFDI is required";
+  //   setValidation(newValidation);
+  // };
 
-  useEffect(() => {
-    const isFormValid =
-      !validation.name &&
-      !validation.type &&
-      !validation.rfc &&
-      !validation.postalCode &&
-      !validation.taxRegime &&
-      !validation.useCfdi;
+
+  // Integrate useBuyerJourneyIntercept for blocking progress based on form validation
+  useBuyerJourneyIntercept(async () => {
+    let isSent = false
+    const hasEmptyField = Object.values(formValues).some(value => value.length === 0);
+    const hasValidationErrors = Object.values(validation).some(value => value !== '');
+
+
+    console.log({formValues})
+    console.log({validation})
+    console.log({hasEmptyField})
+    console.log({hasValidationErrors})
     
-    if(isFormValid) {
-      handleSubmit()
+    // if (checked && isFormValid ) {
+    //   // const allValuesAreEmpty = areAllValuesEmpty(validation)
+    //   console.log('FIRST level validation')
+
+    //     return {
+    //       behavior: "block",
+    //       reason: "Form validation failed",
+    //       perform: () => {
+    //         // Ensure any validation errors are shown
+    //         validateFormValueEmpty();
+    //       },
+    //     };
+      
+    // }
+
+    if((checked && hasEmptyField) || (checked && hasValidationErrors)) {
+      console.log('second level validation')
+      return {
+        behavior: "block",
+        reason: "Form validation",
+        perform: () => {
+          // Ensure any validation errors are shown
+          if (Object.keys(formValues).length) {
+            Object.entries(formValues).forEach(([key, value]) => {
+              handleChange(key, value)
+            });
+          }
+        },
+      };
     }
-  }, [validation])
+
+    if (!hasEmptyField && !hasValidationErrors && !isSent) {
+      console.log('Form validation successful - proceeding to submit');
+        handleSubmit();
+        isSent = true
+  
+      return {
+        behavior: 'block',
+        reason: 'Form validation successful',
+        perform: () => {
+          console.log('Form submitted successfully');
+        },
+      };
+    }
+
+    return {
+      behavior: 'allow',
+    };
+  });
+
+  useEffect( () => {
+
+    setCfdiOptions(
+      taxFormJson.cfdis.map(item => ({
+        value: item.cfdi,
+        label: item.cfdi
+      }))
+    );
+    
+  }, [])
 
   // 3. Render a UI
   return (
@@ -330,8 +320,8 @@ function Extension() {
         <BlockStack>
           <Heading level={1}>{translate('taxInformationForYourInvoice')}</Heading>
           <Heading level={3}>{translate('pleaseVerifyBodyCopy')}</Heading>
-          {console.log('formValues', formValues)}
-          {console.log('validation', validation)}
+          {/* {console.log('formValues', formValues)} */}
+          {/* {console.log('validation', validation)} */}
           <Form>
             <Grid columns={['50%', '50%']} spacing="base">
               <View>
@@ -351,7 +341,7 @@ function Extension() {
                     { value: 'natural_person', label: 'Im a natural person' },
                     { value: 'legal_entity', label: 'Im a legal entity' },
                   ]}
-                  error={(formValues.type.length && validation.type)? validation.type : ''}
+                  error={(validation.type)? validation.type : ''}
                 />
               </View>
               <View>
@@ -359,7 +349,7 @@ function Extension() {
                   label={translate('rfc')}
                   value={formValues.rfc}
                   onChange={(value) => handleChange('rfc', value)}
-                  error={formValues.rfc.length && validation.rfc? validation.rfc : ''}
+                  error={validation.rfc? validation.rfc : ''}
                 />
               </View>
               <View>
@@ -389,10 +379,6 @@ function Extension() {
                 />
               </View>
             </Grid>
-            {/* <BlockSpacer spacing="base" /> */}
-            {/* <Button accessibilityRole="submit">
-              Submit
-            </Button> */}
           </Form>
         </BlockStack>
       )}

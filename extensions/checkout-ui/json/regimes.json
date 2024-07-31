@@ -21,9 +21,6 @@
   "cfdis": [
     { "person": "natural_person", "cfdi": "G01 - Adquisicion de Mercancias" },
     { "person": "natural_person", "cfdi": "G02 - Devoluciones, Descuentos, o Bonificaciones" },
-    { "person": "natural_person", "cfdi": "S01 - Sin Efectos Fiscales" },
-    { "person": "legal_entity", "cfdi": "G01 - Adquisicion de Mercancias" },
-    { "person": "legal_entity", "cfdi": "G02 - Devoluciones, Descuentos, o Bonificaciones" },
-    { "person": "legal_entity", "cfdi": "S01 - Sin Efectos Fiscales" }
+    { "person": "natural_person", "cfdi": "S01 - Sin Efectos Fiscales" }
   ]
 }

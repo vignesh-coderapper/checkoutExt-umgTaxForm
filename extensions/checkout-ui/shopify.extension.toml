@@ -10,6 +10,10 @@ name = "checkout-ui"
 handle = "checkout-ui"
 type = "ui_extension"
 
+[capabilities]
+block_progress = true
+
+
 
 # Controls where in Shopify your extension will be injected,
 # and the file that contains your extension’s source code. Learn more:
@@ -18,12 +22,14 @@ type = "ui_extension"
 [[extensions.targeting]]
 module = "./src/Checkout.jsx"
 #target = "purchase.checkout.block.render"
-target = "purchase.checkout.actions.render-before"
+#target = "purchase.checkout.actions.render-before"
+target = "purchase.checkout.delivery-address.render-after"
 
 [extensions.capabilities]
 # Gives your extension access to directly query Shopify’s storefront API.
 # https://shopify.dev/docs/api/checkout-ui-extensions/unstable/configuration#api-access
 api_access = true
+block_progress = true
 
 # Gives your extension access to make external network calls, using the
 # JavaScript `fetch()` API. Learn more:
