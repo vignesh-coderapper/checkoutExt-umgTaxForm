@@ -11,6 +11,7 @@ import {
   useApplyCartLinesChange,
   useBuyerJourneyIntercept,
   useExtensionCapability,
+  useAttributes,
 } from "@shopify/ui-extensions-react/checkout";
 import { BlockSpacer, Button, Form, Grid, GridItem, Heading, Select, TextField, View } from "@shopify/ui-extensions/checkout";
 import { useCallback, useEffect, useState } from "react";
@@ -25,10 +26,8 @@ export default reactExtension("purchase.checkout.delivery-address.render-after",
 function Extension() {
   const translate = useTranslate();
   const [checked, setChecked] = useState(false);
-  const [isSubmitted, setSubmitted] = useState(false);
   const [regimeOptions, setRegimeOptions] = useState([])
   const [cfdiOptions, setCfdiOptions] = useState([])
-  // const [selectedOption, setSelectedOption] = useState([])
   const { extension } = useApi();
   const initialFormState = {
     name: '',
@@ -38,6 +37,26 @@ function Extension() {
     taxRegime: '',
     useCfdi: ''
   }
+
+  console.log('useattribute', useAttributes())
+
+  const cartAttributes = useAttributes()
+
+  const cartAttributeFormValue = (cartAttributes && cartAttributes.length) 
+  ? (() => {
+      const attribute = cartAttributes.find(attribute => attribute.key === "invoiceTaxForm");
+      if (attribute) {
+        try {
+          return JSON.parse(attribute.value);
+        } catch (e) {
+          console.error("Invalid JSON format:", attribute.value);
+        }
+      }
+      return null;
+    })()
+  : null;
+
+  console.log("taxFormValue", cartAttributeFormValue)
 
 
   const [formValues, setFormValues] = useState(initialFormState);
@@ -115,7 +134,7 @@ function Extension() {
     });
   }
 
-  const validateEntity = (field, value) => {
+  const regimeOptionHandler = (value) => {
     const regimeArr = [];
     taxFormJson.regimes.forEach((item) => {
       if (item.person === value) {
@@ -126,16 +145,16 @@ function Extension() {
       }
     });
     setRegimeOptions(regimeArr)
-    // setFormValues((prev) => ({
-    //   ...prev,
-    //   [field]: value,
-    //   rfc: ''
-    // }));
+  }
+
+  const validateEntity = (field, value) => {
+    regimeOptionHandler(value)
     setFormValues((prev) => {
       const newFormValues = {
         ...prev,
         [field]: value,
         rfc: '', // Ensure rfc is set to an empty string
+        taxRegime: ''
       };
   
       // Validate RFC with the updated form values
@@ -178,25 +197,6 @@ function Extension() {
     }
   };
 
-
-  // const handleSubmit = async () => {
-  //   try {
-  //     const result = await applyAttributeChange({
-  //       key: "invoiceTaxForm",
-  //       type: "updateAttribute",
-  //       value: JSON.stringify(formValues),
-  //     });
-  //     // setChecked(false)
-  //     // if(result) {
-  //     //   setSuccess(true)
-  //     // }
-  //     console.log('Cart attributes updated successfully', result);
-  //   } catch (error) {
-  //     console.error('Error updating cart attributes:', error);
-  //   }
-  // };
-
-
   const handleSubmit = async () => {
     try {
       const result = await applyAttributeChange({
@@ -206,9 +206,6 @@ function Extension() {
       });
 
       console.log("Cart attributes updated successfully", result);
-      if(result) {
-        setSubmitted(true)
-      }
     } catch (error) {
       console.error("Error updating cart attributes:", error);
     }
@@ -224,80 +221,7 @@ function Extension() {
       return newChecked;
     });
   }
-
-  // const validateFormValueEmpty = () => {
-  //   const newValidation = { ...validation };
-  //   if (!formValues.name) newValidation.name = "Name is required";
-  //   if (!formValues.type) newValidation.type = "Type is required";
-  //   if (!formValues.rfc) newValidation.rfc = "RFC is required";
-  //   if (!formValues.postalCode) newValidation.postalCode = "Postal Code is required";
-  //   if (!formValues.taxRegime) newValidation.taxRegime = "Tax Regime is required";
-  //   if (!formValues.useCfdi) newValidation.useCfdi = "CFDI is required";
-  //   setValidation(newValidation);
-  // };
-
-
-  // Integrate useBuyerJourneyIntercept for blocking progress based on form validation
-  useBuyerJourneyIntercept(async () => {
-    let isSent = false
-    const hasEmptyField = Object.values(formValues).some(value => value.length === 0);
-    const hasValidationErrors = Object.values(validation).some(value => value !== '');
-
-
-    console.log({formValues})
-    console.log({validation})
-    console.log({hasEmptyField})
-    console.log({hasValidationErrors})
-    
-    // if (checked && isFormValid ) {
-    //   // const allValuesAreEmpty = areAllValuesEmpty(validation)
-    //   console.log('FIRST level validation')
-
-    //     return {
-    //       behavior: "block",
-    //       reason: "Form validation failed",
-    //       perform: () => {
-    //         // Ensure any validation errors are shown
-    //         validateFormValueEmpty();
-    //       },
-    //     };
-      
-    // }
-
-    if((checked && hasEmptyField) || (checked && hasValidationErrors)) {
-      console.log('second level validation')
-      return {
-        behavior: "block",
-        reason: "Form validation",
-        perform: () => {
-          // Ensure any validation errors are shown
-          if (Object.keys(formValues).length) {
-            Object.entries(formValues).forEach(([key, value]) => {
-              handleChange(key, value)
-            });
-          }
-        },
-      };
-    }
-
-    if (!hasEmptyField && !hasValidationErrors && !isSent) {
-      console.log('Form validation successful - proceeding to submit');
-        handleSubmit();
-        isSent = true
   
-      return {
-        behavior: 'block',
-        reason: 'Form validation successful',
-        perform: () => {
-          console.log('Form submitted successfully');
-        },
-      };
-    }
-
-    return {
-      behavior: 'allow',
-    };
-  });
 
   useEffect( () => {
 
@@ -310,10 +234,58 @@ function Extension() {
     
   }, [])
 
+  useEffect(() => {
+    async function formSubmit() {
+      await handleSubmit();
+    }
+
+    const hasEmptyField = Object.values(formValues).some(value => value.length === 0);
+    const hasValidationErrors = Object.values(validation).some(value => value !== '');
+    if(!hasEmptyField && !hasValidationErrors) {
+      formSubmit()
+    }
+    
+  }, [validation, formValues])
+
+  useEffect(() => {
+    if(cartAttributeFormValue) {
+      setChecked(true)
+      regimeOptionHandler(cartAttributeFormValue.type)
+      setTimeout(() => {
+        setFormValues(cartAttributeFormValue)
+      }, 1000);
+    }
+  }, [])
+
+
+  // Integrate useBuyerJourneyIntercept for blocking progress based on form validation
+  useBuyerJourneyIntercept(async () => {
+    const hasEmptyField = Object.values(formValues).some(value => value.length === 0);
+    const hasValidationErrors = Object.values(validation).some(value => value !== '');
+  
+    if (checked) {
+      if (hasEmptyField || hasValidationErrors) {
+        return {
+          behavior: "block",
+          reason: "Form validation failed",
+          perform: () => {
+            // Validate fields to show errors
+            // validateFormValueEmpty();
+            Object.entries(formValues).forEach(([key, value]) => {
+              handleChange(key, value);
+            });
+          },
+        };
+      }
+    }
+  
+    return { behavior: "allow" };
+  });
+
   // 3. Render a UI
   return (
     <BlockStack>
-      <Checkbox id="checkbox" name="checkbox" onChange={checkboxHandler}>
+      <Checkbox id="checkbox" name="checkbox" onChange={checkboxHandler} checked={checked}>
         {translate('clickHereIfYouRequireAnInvoice')}
       </Checkbox>
       {checked && (
